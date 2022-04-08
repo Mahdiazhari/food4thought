@@ -4,7 +4,8 @@ import requests
 from lxml import html
 import re
 from util.http_utility import get_http_headers
-import multiprocessing as mp
+#import multiprocessing as mp
+from pathos.multiprocessing import ProcessingPool as Pool #python package which enables multiprocessing on child classes
 import time
 
 class Spider:
@@ -131,8 +132,8 @@ class Spider:
     
 
     def start_scrape(self, max_pages=100, multithread=True):
-        """Get all recipe items from the seeds given. Can choose to enable multithreading.
-        Multithreading is used to immediately scrape all menu items from a list of menu urls, but becareful for blockers.
+        """Get all recipe items from the seeds given. Can choose to enable multiprocessing.
+        Multiprocessing is used to immediately scrape all menu items from a list of menu urls, but be careful of blockers.
 
          Args:
             max_pages (int): maximum number of pages to scrape
@@ -142,37 +143,43 @@ class Spider:
         """
 
         COLUMN_NAMES = ['name','ingredients', 'total_time','instructions', 'servings','category','prep_time','cook_time']
-       
         all_items = []
-        try:
-            for seed_url in self.seeds:
-                # listing_items = []
-                if self.listing['next']['type'] == 'url':
-                    for i in range(max_pages):
-                        page_url = seed_url + self.listing['next']['next_page_str'].format(i+1)
-                        print('spider is scraping page: {}'.format(i+1))
-                        listing_items = list(set(self.get_items_from_page(page_url))) #convert to set to remove duplicate urls
-                        if multithread: 
-                            pool = mp.Pool(mp.cpu_count()) #initialize multiprocessing pool
-                            results  = pool.map(self.scrape_one_item, [url for url in listing_items])
-                            pool.close() #close the multithreading  pool
-                        else:
-                            results = []
-                            for item_url in listing_items:
-                                item = self.scrape_one_item(item_url)
-                                results.append(item)
-                                                    
-                        all_items += results
+        #try:
+        for seed_url in self.seeds:
+            if self.listing['next']['type'] == 'url':
+                for i in range(max_pages):
+                    listing_items = []
+                    page_url = seed_url + self.listing['next']['next_page_str'].format(i+1)
+                    print('spider is scraping page: {}'.format(i+1))
+                    print('spider is scraping url: ', page_url)
+                    listing_items = list(set(self.get_items_from_page(page_url))) #convert to set to remove duplicate urls
+                    if not listing_items:
+                        break #last page
+                    if multithread: 
+                        pool = Pool() #initialize multiprocessing pool
+                        results  = pool.map(self.scrape_one_item, [url for url in listing_items])
+                        print('scraping - multithreaded, n items: ', len(listing_items))
+                        pool.close() #close the multiprocessing  pool
+                    else:
+                        results = []
+                        for item_url in listing_items:
+                            item = self.scrape_one_item(item_url)
+                            results.append(item)
+                                            
+                    all_items += results
 
-                        # for item_url in listing_items:
-                        #     item = self.scrape_one_item(item_url)
+                    # for item_url in listing_items:
+                    #     item = self.scrape_one_item(item_url)
 
-                            #item_df = pd.DataFrame([item], columns=item.keys())
-                            #df = pd.concat([df,item_df], ignore_index=True)            
-            return all_items
-        except Exception as e:
-            print(e)
-            return all_items
+                        #item_df = pd.DataFrame([item], columns=item.keys())
+                        #df = pd.concat([df,item_df], ignore_index=True)
+               #             
+       
+        return all_items
+
+        # except Exception as e:
+        #     print(e)
+        #     return all_items
     
     def get_items_from_page(self, page_url):
         """Get all item urls from the current page listing
@@ -189,7 +196,7 @@ class Spider:
         if res.status_code == 200:
             doc = html.document_fromstring(res.text)
             urls = doc.xpath(self.listing['items'])
-            #print('these are the urls: ', urls)
+            print('got items from url: ', page_url)
             return urls
         else:
             raise Exception('Cannot open the menu url, status code = {}'.format(res.status_code))
