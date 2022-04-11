@@ -4,9 +4,10 @@ import requests
 from lxml import html
 import re
 from util.http_utility import get_http_headers
-#import multiprocessing as mp
-from pathos.multiprocessing import ProcessingPool as Pool #python package which enables multiprocessing on child classes
+import multiprocessing as mp
+#from pathos.multiprocessing import ProcessingPool as Pool #python package which enables multiprocessing on child classes
 import time
+import demjson
 
 class Spider:
     """Scraper Spider class for scraping recipes from countries. 
@@ -18,11 +19,12 @@ class Spider:
         attrs (dict): dictionary containing xpaths of the attributes to scrape
         headers (dict): dictionary of custom header if the website needs custom headers
     """
-    def __init__(self, main_page, seeds, listing, attrs, header=None):
+    def __init__(self, main_page, seeds, listing, attrs, available_json, header=None):
         self.main_page = main_page
         self.seeds = seeds
         self.listing = listing
         self.attrs = attrs
+        self.available_json = available_json
         if header:
             self.header=header #if website needs a custom header
         else:
@@ -46,73 +48,120 @@ class Spider:
         """
         session = requests.Session() 
         session.headers.update(self.header)
-
+        
+        time.sleep(2)
         #add home page url to the obtained item url if item url is not complete
         if self.main_page not in url:
             res = session.get(self.main_page + url)
         else:
             res = session.get(url)
 
+        name, total_time, ingredients, instructions, servings, category, prep_time, cook_time = '','','','','','','',''
+
         if res.status_code == 200:
             try:
                 #print(res.status_code)
                 doc = html.document_fromstring(res.text)
                 #set default values for variables
-                name, total_time, ingredients, instructions, servings, category, prep_time, cook_time = '','','','','','','',''
 
-                #Name
-                if self.check_normalize_space(self.attrs['name']):
-                    name = doc.xpath(self.attrs['name'])
-                else: name = doc.xpath(self.attrs['name'])[0]
+                if self.available_json:
+                    #load the json containing the data from the script
+                    #script_data = json.loads(doc.xpath(self.available_json['xpath']))
 
-                #Total Time
-                if self.check_normalize_space(self.attrs['total_time']):
-                    total_time = doc.xpath(self.attrs['total_time'])
-                else:  total_time = doc.xpath(self.attrs['total_time'])[0]
+                    script_data = demjson.decode(doc.xpath(self.available_json['xpath']))
 
-                #ingredients
-                if self.check_normalize_space(self.attrs['ingredients']):
-                    ingredients = doc.xpath(self.attrs['ingredients'])
-                else: ingredients = doc.xpath(self.attrs['ingredients'])[0]
+                    #print(script_data) 
 
-                #instructions
-                if self.check_normalize_space(self.attrs['instructions']):
-                    instructions = doc.xpath(self.attrs['instructions'])
-                else:  instructions = doc.xpath(self.attrs['instructions'])[0]
-
-                #servings
-                if self.attrs['servings']:
-                    if self.check_normalize_space(self.attrs['servings']):
-                        servings = doc.xpath(self.attrs['servings'])
-                    else: servings = doc.xpath(self.attrs['servings'])[0]
-
-                #category
-                if self.attrs['category']:
-                    if self.check_normalize_space(self.attrs['category']):
-                        category = doc.xpath(self.attrs['category'])
-                    else: category = doc.xpath(self.attrs['category'])[0]
-
-                #prep time
-                if self.attrs['prep_time']:
-                    if self.check_normalize_space(self.attrs['prep_time']):
-                        prep_time = doc.xpath(self.attrs['prep_time'])
-                    else: prep_time = doc.xpath(self.attrs['prep_time'])[0]
+                    name = script_data.get(self.attrs['name'])
                 
-                #cooking time
-                if self.attrs['cook_time']:
-                    if self.check_normalize_space(self.attrs['cook_time']):
-                        cook_time = doc.xpath(self.attrs['cook_time'])
-                    else: cook_time = doc.xpath(self.attrs['cook_time'])[0]
+                    ingredients = []
+                    ingredients = script_data.get(self.attrs['ingredients'])
+                    #ingredients = ' '.join(ingredients)# join ingredients
+
+                    instructions = []
+                    inst_list_web= script_data.get(self.attrs['instructions'])
+                
+                    for instruction in inst_list_web:
+                        instructions.append(instruction['text'])
+
+                    servings = script_data.get(self.attrs['servings'])
+
+                    category = script_data.get(self.attrs['category'])
+
+
+                    total_time = script_data.get(self.attrs['total_time'])
+                    #total_time = self.process_time(total_time)
+                    prep_time = script_data.get(self.attrs['prep_time'])
+                    cook_time = script_data.get(self.attrs['cook_time'])
+
+                    return {'name': name, 'total_time': total_time, 'ingredients': ingredients, 'instructions': instructions, 'servings': servings,
+                'category': category, 'prep_time': prep_time, 'cook_time': cook_time,}
+                    
+                    
+                
+                else: #if there's no available script_json
+                    #Name
+                    if self.check_normalize_space(self.attrs['name']):
+                        name = doc.xpath(self.attrs['name'])
+                    else: name = doc.xpath(self.attrs['name'])[0]
+
+                    #Total Time
+                    if self.check_normalize_space(self.attrs['total_time']):
+                        total_time = doc.xpath(self.attrs['total_time'])
+                    else:  total_time = doc.xpath(self.attrs['total_time'])[0]
+
+                    #ingredients
+                    if self.check_normalize_space(self.attrs['ingredients']):
+                        ingredients = doc.xpath(self.attrs['ingredients'])
+                    else: ingredients = doc.xpath(self.attrs['ingredients'])
+
+                    #instructions
+                    if self.check_normalize_space(self.attrs['instructions']):
+                        instructions = doc.xpath(self.attrs['instructions'])
+                    else:  instructions = doc.xpath(self.attrs['instructions'])
+
+                    #servings
+                    if self.attrs['servings']:
+                        if self.check_normalize_space(self.attrs['servings']):
+                            servings = doc.xpath(self.attrs['servings'])
+                        else: servings = doc.xpath(self.attrs['servings'])[0]
+
+                    #category
+                    if self.attrs['category']:
+                        if self.check_normalize_space(self.attrs['category']):
+                            category = doc.xpath(self.attrs['category'])
+                        else: category = doc.xpath(self.attrs['category'])[0]
+
+                    #prep time
+                    if self.attrs['prep_time']:
+                        if self.check_normalize_space(self.attrs['prep_time']):
+                            prep_time = doc.xpath(self.attrs['prep_time'])
+                        else: prep_time = doc.xpath(self.attrs['prep_time'])[0]
+                    
+                    #cooking time
+                    if self.attrs['cook_time']:
+                        if self.check_normalize_space(self.attrs['cook_time']):
+                            cook_time = doc.xpath(self.attrs['cook_time'])
+                        else: cook_time = doc.xpath(self.attrs['cook_time'])[0]
 
                 return {'name': name, 'total_time': total_time, 'ingredients': ingredients, 'instructions': instructions, 'servings': servings,
                 'category': category, 'prep_time': prep_time, 'cook_time': cook_time,}
+
+
             except Exception as e:
-                print('exception: ', e)
-                raise Exception('something is wrong for item: {}'.format(url)) from e
+                print(e)
+                print('something is wrong for item: {}'.format(url)) 
+                return {'name': name, 'total_time': total_time, 'ingredients': ingredients, 'instructions': instructions, 'servings': servings,
+            'category': category, 'prep_time': prep_time, 'cook_time': cook_time,}
+
+                #raise Exception(e)
 
 
         else:
-            raise Exception('Cannot open one menu url, status code = {}'.format(res.status_code))
+            #raise Exception('Cannot open one menu url, status code = {}, url = {}'.format(res.status_code, url))
+            print('Cannot open one recipe url, status code = {}, url = {}'.format(res.status_code, url))
+            return {'name': name, 'total_time': total_time, 'ingredients': ingredients, 'instructions': instructions, 'servings': servings,
+            'category': category, 'prep_time': prep_time, 'cook_time': cook_time,}
 
     
     # attrs = {
@@ -136,7 +185,7 @@ class Spider:
         Multiprocessing is used to immediately scrape all menu items from a list of menu urls, but be careful of blockers.
 
          Args:
-            max_pages (int): maximum number of pages to scrape
+            max_pages (int): maximum number of pages to scrape, default =100 
 
         Returns:
             list: list containing the url of items for all seeds for all pages
@@ -151,12 +200,13 @@ class Spider:
                     listing_items = []
                     page_url = seed_url + self.listing['next']['next_page_str'].format(i+1)
                     print('spider is scraping page: {}'.format(i+1))
-                    print('spider is scraping url: ', page_url)
+                    #print('spider is scraping url: ', page_url)
                     listing_items = list(set(self.get_items_from_page(page_url))) #convert to set to remove duplicate urls
                     if not listing_items:
                         break #last page
                     if multithread: 
-                        pool = Pool() #initialize multiprocessing pool
+                        #pool = Pool() #initialize Pathos multiprocessing pool
+                        pool = mp.Pool(mp.cpu_count()) #initialize multiprocessing pool
                         results  = pool.map(self.scrape_one_item, [url for url in listing_items])
                         print('scraping - multithreaded, n items: ', len(listing_items))
                         pool.close() #close the multiprocessing  pool
@@ -196,10 +246,12 @@ class Spider:
         if res.status_code == 200:
             doc = html.document_fromstring(res.text)
             urls = doc.xpath(self.listing['items'])
-            print('got items from url: ', page_url)
+            #print('got items from url: ', page_url)
             return urls
         else:
-            raise Exception('Cannot open the menu url, status code = {}'.format(res.status_code))
+            #raise Exception('Cannot open the menu url, status code = {}'.format(res.status_code))
+            print('Cannot open the menu url, status code = {}, url= {}'.format(res.status_code, page_url))
+            return []
         
 
 
