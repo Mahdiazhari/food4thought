@@ -4,7 +4,7 @@ import requests
 from lxml import html
 import re
 from util.http_utility import get_http_headers
-from util.user_agent import get_random_ua
+from util.user_agent import get_random_ua 
 import multiprocessing as mp
 #from pathos.multiprocessing import ProcessingPool as Pool #python package which enables multiprocessing on child classes
 import time
@@ -48,6 +48,7 @@ class Spider:
             dict: dict of the item
         """
         session = requests.Session() 
+        #randomize user-agent in every request
         random_ua =  get_random_ua()
         header_template = self.header
         header_template['user-agent'] = random_ua
@@ -265,6 +266,7 @@ class Spider:
            list: list containing the url of items in the current page
         """
         session = requests.Session() 
+        #randomize user-agent in every request
         random_ua =  get_random_ua()
         header_template = self.header
         header_template['user-agent'] = random_ua
