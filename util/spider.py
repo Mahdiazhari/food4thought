@@ -4,6 +4,7 @@ import requests
 from lxml import html
 import re
 from util.http_utility import get_http_headers
+from util.user_agent import get_random_ua
 import multiprocessing as mp
 #from pathos.multiprocessing import ProcessingPool as Pool #python package which enables multiprocessing on child classes
 import time
@@ -47,7 +48,10 @@ class Spider:
             dict: dict of the item
         """
         session = requests.Session() 
-        session.headers.update(self.header)
+        random_ua =  get_random_ua()
+        header_template = self.header
+        header_template['user-agent'] = random_ua
+        session.headers.update(header_template)
         
         time.sleep(2)
         #add home page url to the obtained item url if item url is not complete
@@ -178,8 +182,6 @@ class Spider:
     # listing={'items': '//div[@class="contentS"]//a/@href', 'next': { 'next_page_str': '?p={}', 'type': 'url'}}
     # seeds = ['https://www.bucataras.ro/retete-traditionale/romania/']
 
-    
-
     def start_scrape(self, max_pages=100, multithread=True):
         """Get all recipe items from the seeds given. Can choose to enable multiprocessing.
         Multiprocessing is used to immediately scrape all menu items from a list of menu urls, but be careful of blockers.
@@ -223,7 +225,29 @@ class Spider:
 
                         #item_df = pd.DataFrame([item], columns=item.keys())
                         #df = pd.concat([df,item_df], ignore_index=True)
-               #             
+               # 
+            if self.listing['next']['type'] == 'custom_modify_url':
+                for i in range(max_pages):
+                    listing_items = []
+                    page_url = seed_url.format(i+1)
+                    print('spider is scraping page: {}'.format(i+1))
+                    #print('spider is scraping url: ', page_url)
+                    listing_items = list(set(self.get_items_from_page(page_url))) #convert to set to remove duplicate urls
+                    if not listing_items:
+                        break #last page
+                    if multithread: 
+                        #pool = Pool() #initialize Pathos multiprocessing pool
+                        pool = mp.Pool(mp.cpu_count()) #initialize multiprocessing pool
+                        results  = pool.map(self.scrape_one_item, [url for url in listing_items])
+                        print('scraping - multithreaded, n items: ', len(listing_items))
+                        pool.close() #close the multiprocessing  pool
+                    else:
+                        results = []
+                        for item_url in listing_items:
+                            item = self.scrape_one_item(item_url)
+                            results.append(item)
+                                            
+                    all_items += results
        
         return all_items
 
@@ -241,7 +265,10 @@ class Spider:
            list: list containing the url of items in the current page
         """
         session = requests.Session() 
-        session.headers.update(self.header)
+        random_ua =  get_random_ua()
+        header_template = self.header
+        header_template['user-agent'] = random_ua
+        session.headers.update(header_template)
         res = session.get(page_url)
         if res.status_code == 200:
             doc = html.document_fromstring(res.text)
