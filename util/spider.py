@@ -18,7 +18,7 @@ class Spider:
         seeds (list): list containing url of seed(s) (url categories of recipes, if separated)
         listing (dict): dictionary containing next and item list xpaths 
         attrs (dict): dictionary containing xpaths of the attributes to scrape
-        headers (dict): dictionary of custom header if the website needs custom headers
+        headers (dict): dictionary of custom header template if the website needs predefined custom headers 
     """
     def __init__(self, main_page, seeds, listing, attrs, available_json, header=None):
         self.main_page = main_page
