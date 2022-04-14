@@ -249,6 +249,19 @@ class Spider:
                             results.append(item)
                                             
                     all_items += results
+            
+            if self.listing['next']['type'] == 'one_page':
+                page_url = seed_url
+                listing_items = []
+                listing_items = list(set(self.get_items_from_page(page_url))) #convert to set to remove duplicate urls
+                if not listing_items:
+                    print('no items found in seed:{}'.format(seed_url))
+                results = []
+                for item_url in listing_items:
+                    item = self.scrape_one_item(item_url)
+                    results.append(item)
+                all_items += results
+
        
         return all_items
 
