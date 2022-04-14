@@ -67,13 +67,19 @@ class Spider:
             try:
                 #print(res.status_code)
                 doc = html.document_fromstring(res.text)
-                #set default values for variables
 
                 if self.available_json:
                     #load the json containing the data from the script
-                    #script_data = json.loads(doc.xpath(self.available_json['xpath']))
-
-                    script_data = demjson.decode(doc.xpath(self.available_json['xpath']))
+                    try:
+                        script_data = json.loads(doc.xpath(self.available_json['xpath']))
+                    except Exception as e:
+                        print('json loads does not work')
+                        print(e)
+                        try:
+                            script_data = demjson.decode(doc.xpath(self.available_json['xpath']))
+                        except Exception as e :
+                            print('cannot decode json')
+                            print(e)
 
                     #print(script_data) 
 
