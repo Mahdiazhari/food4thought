@@ -1,8 +1,6 @@
-import pandas as pd
 import json
 import requests
 from lxml import html
-import re
 from util.http_utility import get_http_headers
 from util.user_agent import get_random_ua 
 import multiprocessing as mp
