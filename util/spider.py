@@ -7,6 +7,7 @@ import multiprocessing as mp
 #from pathos.multiprocessing import ProcessingPool as Pool #python package which enables multiprocessing on child classes
 import time
 import demjson
+import random 
 
 class Spider:
     """Scraper Spider class for scraping recipes from countries. 
@@ -202,6 +203,34 @@ class Spider:
         all_items = []
         #try:
         for seed_url in self.seeds:
+            if self.listing['next']['type'] == 'random_pages':
+                max_items  = self.listing['next']['max_items'] 
+                item_per_page = self.listing['next']['items_per_page']
+                max_pages = self.listing['next']['max_pages']
+                n_pages = int(max_items/item_per_page)
+                random_pages = random.sample(range(1, max_pages), n_pages)
+                for i in random_pages:
+                    listing_items = []
+                    page_url = seed_url + self.listing['next']['next_page_str'].format(i)
+                    print('spider is scraping page: {}'.format(i+1))
+                    #print('spider is scraping url: ', page_url)
+                    listing_items = list(set(self.get_items_from_page(page_url))) #convert to set to remove duplicate urls
+                    if not listing_items:
+                        break #last page
+                    if multithread: 
+                        #pool = Pool() #initialize Pathos multiprocessing pool
+                        pool = mp.Pool(mp.cpu_count()) #initialize multiprocessing pool
+                        results  = pool.map(self.scrape_one_item, [url for url in listing_items])
+                        print('scraping - multithreaded, n items: ', len(listing_items))
+                        pool.close() #close the multiprocessing  pool
+                    else:
+                        results = []
+                        for item_url in listing_items:
+                            item = self.scrape_one_item(item_url)
+                            results.append(item)
+                                            
+                    all_items += results
+
             if self.listing['next']['type'] == 'url':
                 for i in range(max_pages):
                     listing_items = []
@@ -298,8 +327,7 @@ class Spider:
             #raise Exception('Cannot open the menu url, status code = {}'.format(res.status_code))
             print('Cannot open the menu url, status code = {}, url= {}'.format(res.status_code, page_url))
             return []
-        
-
+            
 
 
 
