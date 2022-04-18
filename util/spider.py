@@ -30,7 +30,6 @@ class Spider:
         else:
             self.header = get_http_headers()
 
-
     def check_normalize_space(self,xpath):
         if 'normalize-space' in xpath:
             return True
@@ -64,7 +63,7 @@ class Spider:
 
         if res.status_code == 200:
             try:
-                #print(res.status_code)
+                #print('text doc: ', res.text)
                 doc = html.document_fromstring(res.text)
 
                 if self.available_json:
@@ -81,7 +80,11 @@ class Spider:
                             print(e)
 
                     #print(script_data) 
-
+                    if not script_data.get(self.attrs['name']):
+                        if script_data.get('@graph'):
+                            script_data = script_data.get('@graph')[-1] #get last element of graph list
+                        else: print('cant get data')
+                        
                     name = script_data.get(self.attrs['name'])
                 
                     ingredients = []
@@ -90,9 +93,19 @@ class Spider:
 
                     instructions = []
                     inst_list_web= script_data.get(self.attrs['instructions'])
-                
+                    
                     for instruction in inst_list_web:
-                        instructions.append(instruction['text'])
+                        if isinstance(instruction ,str):
+                            instructions.append(instruction)
+                            #print(instruction)
+                        else:
+                            #check if there is itemListElement inside
+                            if instruction.get('itemListElement'):
+                                item_list_element = instruction.get('itemListElement')
+                                for item in item_list_element:
+                                    instructions.append(item['text'])
+                            else:
+                                instructions.append(instruction['text'])
 
                     servings = script_data.get(self.attrs['servings'])
 
@@ -327,7 +340,7 @@ class Spider:
             #raise Exception('Cannot open the menu url, status code = {}'.format(res.status_code))
             print('Cannot open the menu url, status code = {}, url= {}'.format(res.status_code, page_url))
             return []
-            
+
 
 
 
