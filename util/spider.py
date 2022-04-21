@@ -121,7 +121,6 @@ class Spider:
                 'category': category, 'prep_time': prep_time, 'cook_time': cook_time,}
                     
                     
-                
                 else: #if there's no available script_json
                     #Name
                     if self.check_normalize_space(self.attrs['name']):
@@ -144,28 +143,44 @@ class Spider:
                     else:  instructions = doc.xpath(self.attrs['instructions'])
 
                     #servings
-                    if self.attrs['servings']:
-                        if self.check_normalize_space(self.attrs['servings']):
-                            servings = doc.xpath(self.attrs['servings'])
-                        else: servings = doc.xpath(self.attrs['servings'])[0]
+                    try:
+                        if self.attrs['servings']:
+                            if self.check_normalize_space(self.attrs['servings']):
+                                servings = doc.xpath(self.attrs['servings'])
+                            else: servings = doc.xpath(self.attrs['servings'])[0]
+                    except:
+                        print('item has no serving data: {}'.format(url))
+                        servings = ''
 
                     #category
-                    if self.attrs['category']:
-                        if self.check_normalize_space(self.attrs['category']):
-                            category = doc.xpath(self.attrs['category'])
-                        else: category = doc.xpath(self.attrs['category'])[0]
+                    try:
+                        if self.attrs['category']:
+                            if self.check_normalize_space(self.attrs['category']):
+                                category = doc.xpath(self.attrs['category'])
+                            else: category = doc.xpath(self.attrs['category'])[0]
+                    except:
+                        print('item has no category data: {}'.format(url))
+                        category = ''
 
                     #prep time
-                    if self.attrs['prep_time']:
-                        if self.check_normalize_space(self.attrs['prep_time']):
-                            prep_time = doc.xpath(self.attrs['prep_time'])
-                        else: prep_time = doc.xpath(self.attrs['prep_time'])[0]
-                    
+                    try:
+                        if self.attrs['prep_time']:
+                            if self.check_normalize_space(self.attrs['prep_time']):
+                                prep_time = doc.xpath(self.attrs['prep_time'])
+                            else: prep_time = doc.xpath(self.attrs['prep_time'])[0]
+                    except:
+                        print('item has no prep time data: {}'.format(url))
+                        prep_time = ''
+
                     #cooking time
-                    if self.attrs['cook_time']:
-                        if self.check_normalize_space(self.attrs['cook_time']):
-                            cook_time = doc.xpath(self.attrs['cook_time'])
-                        else: cook_time = doc.xpath(self.attrs['cook_time'])[0]
+                    try:
+                        if self.attrs['cook_time']:
+                            if self.check_normalize_space(self.attrs['cook_time']):
+                                cook_time = doc.xpath(self.attrs['cook_time'])
+                            else: cook_time = doc.xpath(self.attrs['cook_time'])[0]
+                    except:
+                        print('item has no cook time data: {}'.format(url))
+                        cook_time = ''
 
                 return {'name': name, 'total_time': total_time, 'ingredients': ingredients, 'instructions': instructions, 'servings': servings,
                 'category': category, 'prep_time': prep_time, 'cook_time': cook_time,}
