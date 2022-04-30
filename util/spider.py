@@ -8,6 +8,7 @@ import multiprocessing as mp
 import time
 import demjson
 import random 
+import undetected_chromedriver.v2 as uc #add undetected chromedriver v2 to scrape complicated websites with cloudflare 
 
 class Spider:
     """Scraper Spider class for scraping recipes from countries. 
@@ -65,7 +66,6 @@ class Spider:
             try:
                 #print('text doc: ', res.text)
                 doc = html.document_fromstring(res.text)
-
                 if self.available_json:
                     #load the json containing the data from the script
                     try:
@@ -76,13 +76,16 @@ class Spider:
                         try:
                             script_data = demjson.decode(doc.xpath(self.available_json['xpath']))
                         except Exception as e :
-                            print('cannot decode json')
+                            print('cannot decode json with demjson')
                             print(e)
 
                     #print(script_data) 
                     if not script_data.get(self.attrs['name']):
                         if script_data.get('@graph'):
                             script_data = script_data.get('@graph')[-1] #get last element of graph list
+                            script_type = str(script_data.get('@type'))
+                            if 'recipe' not in script_type.lower():
+                                print('please check the json schema again')
                         else: print('cant get data')
                         
                     name = script_data.get(self.attrs['name'])
@@ -128,9 +131,11 @@ class Spider:
                     else: name = doc.xpath(self.attrs['name'])[0]
 
                     #Total Time
-                    if self.check_normalize_space(self.attrs['total_time']):
-                        total_time = doc.xpath(self.attrs['total_time'])
-                    else:  total_time = doc.xpath(self.attrs['total_time'])[0]
+                    try:
+                        if self.check_normalize_space(self.attrs['total_time']):
+                            total_time = doc.xpath(self.attrs['total_time'])
+                        else:  total_time = doc.xpath(self.attrs['total_time'])[0]
+                    except: pass
 
                     #ingredients
                     if self.check_normalize_space(self.attrs['ingredients']):
@@ -227,7 +232,8 @@ class Spider:
             list: list containing the url of items for all seeds for all pages
         """
 
-        COLUMN_NAMES = ['name','ingredients', 'total_time','instructions', 'servings','category','prep_time','cook_time']
+        #COLUMN_NAMES = ['name','ingredients', 'total_time','instructions', 'servings','category','prep_time','cook_time']
+
         all_items = []
         #try:
         for seed_url in self.seeds:
