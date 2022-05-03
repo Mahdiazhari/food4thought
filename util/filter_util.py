@@ -1,8 +1,6 @@
 
 
 
-
-
 def exclude_recipe(categories, exclusions= []):
     """This function creates a filter function to exclude certain recipes using pandas and lambda functions.
 
@@ -33,6 +31,8 @@ def exclude_recipe(categories, exclusions= []):
             return False
     else: 
         return False
+
+    
 
 
 
