@@ -18,8 +18,13 @@ class Yummly(Spider):
     def __init__(self, main_page, seeds, listing, attrs, available_json, header=None ):
         super().__init__(main_page,seeds,listing,attrs, available_json, header)
 
+    """
+    random_scraping dict will contain:
+    - 'amt': amt we want to scrape
+    - 'max': maximum amount of items available
+    """
 
-    def start_scrape(self, max_pages=100, multithread=True):
+    def start_scrape(self, max_pages=100, multithread=True, random_scraping = False):
         """Get all recipe items from the seeds given. Can choose to enable multiprocessing.
         Multiprocessing is used to immediately scrape all menu items from a list of menu urls, but be careful of blockers.
 
@@ -36,47 +41,61 @@ class Yummly(Spider):
         all_items = []
         #try:
         for page_url in self.seeds:
-            item_urls = []
-            session = requests.Session() 
-            #randomize user-agent in every request
-            random_ua =  get_random_ua()
-            header_template = get_http_headers()
-            header_template['user-agent'] = random_ua
-            session.headers.update(header_template)
+            #item_urls = []
+            
             #for i in range(0, max_page, 200):
             #page_url.format(start_index= 0, max_num = 1000)
-            res = session.get(page_url)
-            if res.status_code == 200:
-                page_data = json.loads(res.text)
-                urls = page_data.get('feed')
-
-                print('length of feeds: ', len(urls))
-                listing_items = [recipe.get('tracking-id') for recipe in urls]
-                
-                if multithread: # does not work for undetected chromedriver
-                        pool = mp.Pool(mp.cpu_count()) #initialize multiprocessing pool
-                        results  = pool.map(self.scrape_one_item, [url for url in listing_items])
-                        print('scraping - multithreaded, n items: ', len(listing_items))
-                        pool.close() #close the multiprocessing  pool
-                else:
-                    results = []
-                    for item_url in listing_items:
-                        item = self.scrape_one_item(item_url)
-                        results.append(item)
-                
-                all_items += results 
-
-
+            if random_scraping:
+                max_items = random_scraping.get('max')
+                n = random_scraping.get('amt')
+                #start = 0
+                random_amounts = random.sample(range(100, max_items), int(n/100))
+                for amount in random_amounts:
+                    start_index = amount - 100
+                    scrape_url = page_url.format(start=start_index, end=amount)
+                    results = self.process_items(scrape_url, multithread)
+                    all_items += results 
             else:
-                print('Cannot open the menu url, status code = {}, url= {}'.format(res.status_code, page_url))
-                raise Exception('Cannot open the menu url, status code = {}'.format(res.status_code))
-
+                results = self.process_items(page_url, multithread)
+                all_items += results
 
         return all_items
 
         # except Exception as e:
         #     print(e)
         #     return all_items
+
+    def process_items(self, page_url, multithread):
+        session = requests.Session() 
+        #randomize user-agent in every request
+        random_ua =  get_random_ua()
+        header_template = get_http_headers()
+        header_template['user-agent'] = random_ua
+        session.headers.update(header_template)
+        res = session.get(page_url)
+        if res.status_code == 200:
+            page_data = json.loads(res.text)
+            urls = page_data.get('feed')
+
+            print('length of feeds: ', len(urls))
+            listing_items = [recipe.get('tracking-id') for recipe in urls]
+            
+            if multithread: # does not work for undetected chromedriver
+                pool = mp.Pool(mp.cpu_count()) #initialize multiprocessing pool
+                results  = pool.map(self.scrape_one_item, [url for url in listing_items])
+                print('scraping - multithreaded, n items: ', len(listing_items))
+                pool.close() #close the multiprocessing  pool
+                return results
+            else:
+                results = []
+                for item_url in listing_items:
+                    item = self.scrape_one_item(item_url)
+                    results.append(item)
+                return results
+        else:
+            print('Cannot open the menu url, status code = {}, url= {}'.format(res.status_code, page_url))
+            raise Exception('Cannot open the menu url, status code = {}'.format(res.status_code))
+
     
     def scrape_one_item(self, url):
         """ Scrape one item from Yummly using undetected chromedriver to bypass cloudflare restrictions.
@@ -87,7 +106,7 @@ class Yummly(Spider):
         Returns:
             _type_: json containing the recipe information
         """
-
+        name, total_time, ingredients, instructions, servings, category, prep_time, cook_time = '','','','','','','',''
         #add undetected chromedriver options
         options = uc.ChromeOptions()
         options.headless=True
@@ -96,9 +115,14 @@ class Yummly(Spider):
         if self.main_page not in url: 
            url = self.main_page + url
            #print(url)
-        driver.get(url)
+        try:
+            driver.get(url)
+        except Exception as e:
+            print(e)
+            print('connection error for item{}'.format(url))
+            return {'name': name, 'total_time': total_time, 'ingredients': ingredients, 'instructions': instructions, 'servings': servings,
+            'category': category, 'prep_time': prep_time, 'cook_time': cook_time,}
         doc = html.document_fromstring(driver.page_source)
-        name, total_time, ingredients, instructions, servings, category, prep_time, cook_time = '','','','','','','',''
         driver.close() #close chromedriver
         try:
             if self.available_json:
