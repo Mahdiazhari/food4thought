@@ -64,6 +64,7 @@ class Spider:
 
         if res.status_code == 200:
             try:
+
                 #print('text doc: ', res.text)
                 doc = html.document_fromstring(res.text)
                 if self.available_json:
@@ -79,7 +80,11 @@ class Spider:
                             print('cannot decode json with demjson')
                             print(e)
 
-                    #print(script_data) 
+                    #print(isinstance(script_data,list)) 
+                    if isinstance(script_data, list):
+                        #print('its a list')
+                        script_data = script_data[0]
+
                     if not script_data.get(self.attrs['name']):
                         if script_data.get('@graph'):
                             script_data = script_data.get('@graph')[-1] #get last element of graph list
@@ -87,6 +92,7 @@ class Spider:
                             if 'recipe' not in script_type.lower():
                                 print('please check the json schema again')
                         else: print('cant get data')
+                   
                         
                     name = script_data.get(self.attrs['name'])
                 
@@ -126,6 +132,7 @@ class Spider:
                     
                 else: #if there's no available script_json
                     #Name
+                    
                     if self.check_normalize_space(self.attrs['name']):
                         name = doc.xpath(self.attrs['name'])
                     else: name = doc.xpath(self.attrs['name'])[0]
@@ -138,67 +145,125 @@ class Spider:
                     except: pass
 
                     #ingredients
-                    if self.check_normalize_space(self.attrs['ingredients']):
-                        ingredients = doc.xpath(self.attrs['ingredients'])
-                    else: ingredients = doc.xpath(self.attrs['ingredients'])
+                    if isinstance(self.attrs['ingredients'], list):
+                        for xpath in self.attrs['ingredients']:
+                            ingredients = doc.xpath(xpath)
+                            if not ingredients:
+                                pass
+                            else:
+                                break
+                    else:
+                       ingredients = doc.xpath(self.attrs['ingredients'])
 
                     #instructions
-                    if self.check_normalize_space(self.attrs['instructions']):
+                    if isinstance(self.attrs['instructions'], list):
+                        for xpath in self.attrs['instructions']:
+                            instructions = doc.xpath(xpath)
+                            if not instructions:
+                                pass
+                            else:
+                                break
+                    else:  
                         instructions = doc.xpath(self.attrs['instructions'])
-                    else:  instructions = doc.xpath(self.attrs['instructions'])
 
                     #servings
                     try:
-                        if self.attrs['servings']:
+                        if isinstance(self.attrs['servings'], list):
+                            for xpath in self.attrs['servings']:
+                                if self.check_normalize_space(xpath):
+                                    servings = doc.xpath(xpath)
+                                else: 
+                                    servings = doc.xpath(xpath)[0]
+
+                                if not servings:
+                                    pass
+                                else:
+                                    break
+                        else:
                             if self.check_normalize_space(self.attrs['servings']):
                                 servings = doc.xpath(self.attrs['servings'])
-                            else: servings = doc.xpath(self.attrs['servings'])[0]
+                            else: 
+                                servings = doc.xpath(self.attrs['servings'])[0]
                     except:
-                        print('item has no serving data: {}'.format(url))
+                        #print('item has no serving data: {}'.format(url))
                         servings = ''
 
                     #category
                     try:
-                        if self.attrs['category']:
+                        if isinstance(self.attrs['category'], list):
+                            for xpath in self.attrs['category']:
+                                if self.check_normalize_space(xpath):
+                                    category = doc.xpath(xpath)
+                                else: 
+                                    category = doc.xpath(xpath)[0]
+                                
+                                if not category:
+                                    pass
+                                else:
+                                    break
+                        else:
                             if self.check_normalize_space(self.attrs['category']):
                                 category = doc.xpath(self.attrs['category'])
-                            else: category = doc.xpath(self.attrs['category'])[0]
+                            else: 
+                                category = doc.xpath(self.attrs['category'])[0]
                     except:
-                        print('item has no category data: {}'.format(url))
+                        #print('item has no category data: {}'.format(url))
                         category = ''
 
                     #prep time
                     try:
-                        if self.attrs['prep_time']:
+                        if isinstance(self.attrs['prep_time'], list):
+                            for xpath in self.attrs['prep_time']:
+                                if self.check_normalize_space(xpath):
+                                    prep_time = doc.xpath(xpath)
+                                else: 
+                                    prep_time = doc.xpath(xpath)[0]
+                                if not prep_time:
+                                    pass
+                                else:
+                                    break
+                        else:
                             if self.check_normalize_space(self.attrs['prep_time']):
                                 prep_time = doc.xpath(self.attrs['prep_time'])
-                            else: prep_time = doc.xpath(self.attrs['prep_time'])[0]
+                            else: 
+                                prep_time = doc.xpath(self.attrs['prep_time'])[0]
                     except:
-                        print('item has no prep time data: {}'.format(url))
+                        #print('item has no prep time data: {}'.format(url))
                         prep_time = ''
 
                     #cooking time
                     try:
-                        if self.attrs['cook_time']:
+                        if isinstance(self.attrs['cook_time'], list):
+                            for xpath in self.attrs['cook_time']:
+                                
+                                if self.check_normalize_space(xpath):
+                                    cook_time = doc.xpath(xpath)
+                                else: 
+                                    cook_time = doc.xpath(xpath)[0]
+                                if not cook_time:
+                                    pass
+                                else:
+                                    break
+                        else:
                             if self.check_normalize_space(self.attrs['cook_time']):
                                 cook_time = doc.xpath(self.attrs['cook_time'])
-                            else: cook_time = doc.xpath(self.attrs['cook_time'])[0]
+                            else: 
+                                cook_time = doc.xpath(self.attrs['cook_time'])[0]
                     except:
-                        print('item has no cook time data: {}'.format(url))
+                        #print('item has no cook time data: {}'.format(url))
                         cook_time = ''
 
                 return {'name': name, 'total_time': total_time, 'ingredients': ingredients, 'instructions': instructions, 'servings': servings,
                 'category': category, 'prep_time': prep_time, 'cook_time': cook_time,}
 
-
             except Exception as e:
                 print(e)
                 print('something is wrong for item: {}'.format(url)) 
+                #raise Exception(e)
                 return {'name': name, 'total_time': total_time, 'ingredients': ingredients, 'instructions': instructions, 'servings': servings,
             'category': category, 'prep_time': prep_time, 'cook_time': cook_time,}
 
-                #raise Exception(e)
-
+                
 
         else:
             #raise Exception('Cannot open one menu url, status code = {}, url = {}'.format(res.status_code, url))
@@ -273,7 +338,8 @@ class Spider:
                     #print('spider is scraping url: ', page_url)
                     listing_items = list(set(self.get_items_from_page(page_url))) #convert to set to remove duplicate urls
                     if not listing_items:
-                        break #last page
+                        print('no items found for page: {}'.format(page_url))
+                        break #last page probably
                     if multithread: 
                         #pool = Pool() #initialize Pathos multiprocessing pool
                         pool = mp.Pool(mp.cpu_count()) #initialize multiprocessing pool
@@ -352,10 +418,20 @@ class Spider:
         header_template['user-agent'] = random_ua
         session.headers.update(header_template)
         res = session.get(page_url)
+        time.sleep(2)
         if res.status_code == 200:
             doc = html.document_fromstring(res.text)
             urls = doc.xpath(self.listing['items'])
             #print('got items from url: ', page_url)
+            if not urls:
+                for r in range(5): #5 times retry
+                    print('retrying... attempt {}'.format(r))
+                    res2 = session.get(page_url)
+                    if res2.status_code == 200:
+                        doc2 = html.document_fromstring(res2.text)
+                        urls = doc2.xpath(self.listing['items'])
+                        if urls: 
+                            break
             return urls
         else:
             #raise Exception('Cannot open the menu url, status code = {}'.format(res.status_code))
