@@ -4,11 +4,14 @@ from lxml import html
 from util.http_utility import get_http_headers
 from util.user_agent import get_random_ua 
 import multiprocessing as mp
-#from pathos.multiprocessing import ProcessingPool as Pool #python package which enables multiprocessing on child classes
 import time
 import demjson
 import random 
-import undetected_chromedriver.v2 as uc #add undetected chromedriver v2 to scrape complicated websites with cloudflare 
+import undetected_chromedriver.v2 as uc #add undetected chromedriver v2 to scrape complicated websites with cloudflare
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
+
 
 class Spider:
     """Scraper Spider class for scraping recipes from countries. 
@@ -32,13 +35,21 @@ class Spider:
             self.header = get_http_headers()
 
     def check_normalize_space(self,xpath):
+        """This function checks if there is normalize-space in the xpath. It will return True if that's the case
+
+        Args:
+            xpath (str): xpath to check
+
+        Returns:
+            Boolean: indicating presence of 'normalize-space'
+        """
         if 'normalize-space' in xpath:
             return True
         else: return False
 
 
     def scrape_one_item(self,url):
-        """To scrape one item from a given url
+        """To scrape one item from a given url.
 
         Args:
             url (str): url of the item
@@ -47,6 +58,7 @@ class Spider:
             dict: dict of the item
         """
         session = requests.Session() 
+
         #randomize user-agent in every request
         random_ua =  get_random_ua()
         header_template = self.header
@@ -54,14 +66,18 @@ class Spider:
         session.headers.update(header_template)
         
         time.sleep(2)
-        #add home page url to the obtained item url if item url is not complete
-        if self.main_page not in url:
-            res = session.get(self.main_page + url)
-        else:
-            res = session.get(url)
-
         name, total_time, ingredients, instructions, servings, category, prep_time, cook_time = '','','','','','','',''
 
+        #add home page url to the obtained item url if item url is not complete
+        try:
+            if self.main_page not in url:
+                res = session.get(self.main_page + url)
+            else:
+                res = session.get(url)
+        except:
+            return {'name': name, 'total_time': total_time, 'ingredients': ingredients, 'instructions': instructions, 'servings': servings,
+            'category': category, 'prep_time': prep_time, 'cook_time': cook_time,}
+    
         if res.status_code == 200:
             try:
 
@@ -77,11 +93,32 @@ class Spider:
                         try:
                             script_data = demjson.decode(doc.xpath(self.available_json['xpath']))
                         except Exception as e :
-                            print('cannot decode json with demjson')
-                            print(e)
+                            try:
+                                """ 
+                                Attempt to obtain doc of html from using selenium webdriver.
+                                """
 
+                                print('cannot decode json with demjson')
+                                print('trying selenium')
+                                #print(e)
+                                
+                                #try with selenium
+                                options = uc.ChromeOptions()
+                                options.headless=True
+                                options.add_argument('--headless')
+                                driver = uc.Chrome(options=options)
+                                driver.get(url)
+                                WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, "//script[@type='application/ld+json'][contains(text(), 'recipeIngredient')]")))
+                                doc = html.document_fromstring(driver.page_source)
+                                script_data = json.loads(doc.xpath(self.available_json['xpath']))
+                                driver.close()
+                            except:
+                                return {'name': name, 'total_time': total_time, 'ingredients': ingredients, 'instructions': instructions, 'servings': servings,
+                'category': category, 'prep_time': prep_time, 'cook_time': cook_time,}
+
+                
                     #print(isinstance(script_data,list)) 
-                    if isinstance(script_data, list):
+                    if isinstance(script_data, list):                         
                         #print('its a list')
                         script_data = script_data[0]
 
