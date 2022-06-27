@@ -168,6 +168,31 @@ To test if the spider works on one menu:
 croatia_spider.scrape_one_item('https://www.coolinarika.com/recept/brza-krompir-pita')
 ```
 
+sample output:
+
+```
+{'name': 'Brza krompir pita',
+ 'total_time': None,
+ 'ingredients': ['3 jaja',
+  '1 casa ulja (100 ml)',
+  '1 casa jogurta (120 ml)',
+  '1 luk',
+  '100 g feta sira',
+  'persun',
+  '1 mljevena crvena paprika',
+  '2 case brasna (200 g)',
+  '3 krompira (350 g)',
+  '1/2 Prašak za pecivo Docela',
+  'so, biber, vegeta',
+  'sesam za preko'],
+ 'instructions': ['Jaja, jogurt i ulje sjediniti pa kasikom fino izmjesati, dodati izdrobljeni sir, papriku, persun po ukusu, sitno sjeckani luk, krompir na kocke ili po zelji sjecen, brasno pomjesano sa svim suhim sastojcima. Zaciniti po ukusu i dobro izmjesati.',
+  'Usuti smjesu u pouljeni pleh i peci u zagrijanoj pecnici na 190 stepeni 25-30 minuta dok fino ne porumeni i krompir ne bude kuhan. Sluziti uz salatu po zelji i jogurt.'],
+ 'servings': None,
+ 'category': None,
+ 'prep_time': None,
+ 'cook_time': None}
+```
+
 4. Start Scraping
 
 Use the star_scrape function to start scraping, however make sure to set the max_pages and multithread as required
