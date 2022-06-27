@@ -59,10 +59,14 @@ There is no country location in the import
 
 Modify the notebook's output directory as needed
 for example:
+
+
 ```
-OUTPUT = '\home\food4thought\data\raw'
+OUTPUT = '~/Dropbox/food4thought/data/raw'
 ```
 
+Where the tilde/ tide slash is a Linux "shortcut" to denote a user's home directory.
+(https://twiki.org/cgi-bin/view/Wikilearn/TildeSlash)
 
 
 2. Setup the parameters for the Spider class:
