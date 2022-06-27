@@ -62,7 +62,7 @@ for example:
 
 
 ```
-OUTPUT = '~/Dropbox/food4thought/data/raw'
+OUTPUT = '~/Dropbox/food4thought/data/raw/'
 ```
 
 Where the tilde/ tide slash is a Linux "shortcut" to denote a user's home directory.
