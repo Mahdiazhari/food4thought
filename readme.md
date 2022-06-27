@@ -15,7 +15,7 @@ https://pythonbasics.org/virtualenv/
 
 
 
-## Using the Spider Class (and it's child classes)
+## How to Start scraping with the Spider Class (and its child classes)
 
 1. Import Packages and setup directories
 
