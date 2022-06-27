@@ -17,11 +17,21 @@ https://pythonbasics.org/virtualenv/
 
 ## Using the Spider Class (and it's child classes)
 
-1. From the notebook (scrape-[Country Name]) file, import the package
+1. Import Packages and setup directories
+
+From the notebook (scrape-[Country Name]) file, import the package
 
 ```
 from util.spider import Spider
 ```
+
+Modify the notebook's output directory as needed
+for example:
+```
+OUTPUT = '\home\food4thought\data\raw'
+```
+
+
 
 2. Setup the parameters for the Spider class:
 These parameters must be configured based on the recipe website
@@ -143,8 +153,43 @@ These parameters must be configured based on the recipe website
         ```
 
 
+3. Testing Scraping after instantiating the Spider Class.
+
+The spider class has three main functions:
+    1. start_scrape: starts the scraping process, takes two parameters:
+        1. max_pages: number of maximum pages on the website
+        2. multithread: if scraping can be sped up using parallell processes
+    2. scrape_one_item: scrapes one item and returns a dictionary, takes the recipe url as the parameter
+    3. get_items_from_page: extracts to a list the list of urls of a recipe page.
+
+To test if the spider works on one menu:
+
+```
+croatia_spider.scrape_one_item('https://www.coolinarika.com/recept/brza-krompir-pita')
+```
+
+4. Start Scraping
+
+Use the star_scrape function to start scraping, however make sure to set the max_pages and multithread as required
+
+```
+result_list = croatia_spider.start_scrape(max_pages=333)
+```
 
 
+5. Convert the resulting list of items into a dataframe
+
+```
+result_df = pd.DataFrame(result_list)
+```
+
+
+6. Save Dataframe to CSV
+
+OUTPUT is the directory to save the file
+```
+result_df.to_csv(OUTPUT + 'japan_delishkitchen.csv')
+```
 
 
 
