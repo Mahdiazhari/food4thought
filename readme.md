@@ -19,11 +19,28 @@ https://pythonbasics.org/virtualenv/
 
 1. Import Packages and setup directories
 
-From the notebook (scrape-[Country Name]) file, import the package
+From the notebook (scrape-[Country Name]) file, import the Spider package
 
 ```
 from util.spider import Spider
 ```
+
+If the country/recipe website has its own custom spider, import from the custom one:
+
+For example: South Korea has its own Custom Class and it is placed in the korea country in the util folder
+```
+from util.korea.mykoreankitchen import KoreanKitchen
+```
+
+For some websites, the custom class is placed on the same location as the main spider class, in this case the import is like this:
+
+```
+from  util.russianfood import RussianSpider
+```
+
+There is no country location in the import
+
+
 
 Modify the notebook's output directory as needed
 for example:
