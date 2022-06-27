@@ -4,13 +4,28 @@ This repository contains files and codes of the Object Oriented Webscraper I dev
 
 ## How to Setup
 
-### Recommended: Setup Python Virtual Environment
-https://pythonbasics.org/virtualenv/
-1. Create python environment 
-2. Activate Python Enviroment: bin/activate
-3. Install python packages from requirements.txt: pip install -r requirements.txt 
+### 1. Run from Python Virtual Environment
 
-### Directly Install packages (Not Recommended)
+
+In the dropbox folder, I have created an env called wb-scraping containing all the python packages needed.
+
+To activate the virtual environment, run:
+```
+source wb-scraping/bin/activate
+```
+
+### 2. Create new venv environment/conda environment
+
+After creating new environment, run (for venv):
+
+```
+pip -r requirements.txt
+```
+
+
+
+
+### 3. Directly Install packages (Not Recommended)
 1. pip install -r requirements.txt
 
 
